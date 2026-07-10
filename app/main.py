@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.logger import logger
+from app.services.auth_service import auth_service
+from app.clients.whatsapp_client import WhatsAppClient
 
 
 @asynccontextmanager
@@ -20,6 +22,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 # Register all API routes
 app.include_router(api_router)
 
@@ -33,12 +36,15 @@ async def root():
         "application": settings.APP_NAME,
         "environment": settings.APP_ENV,
     }
+
+
 @app.get("/debug")
 async def debug():
     return {
         "verify_token": settings.WA_VERIFY_TOKEN,
         "environment": settings.APP_ENV,
-    }    
+    }
+
 
 @app.get("/client-test")
 async def client_test():
@@ -48,7 +54,6 @@ async def client_test():
         "base_url": whatsapp_client.base_url,
     }
 
-from app.clients.whatsapp_client import WhatsAppClient
 
 whatsapp_client = WhatsAppClient()
 
@@ -57,6 +62,24 @@ whatsapp_client = WhatsAppClient()
 async def send_test():
     response = await whatsapp_client.send_text_message(
         phone_number="918588902062",
-        message="Hello from FastAPI 🚀"
+        message="Hello from FastAPI 🚀",
     )
+
     return response
+
+
+@app.get("/test-magento-auth")
+async def test_magento_auth():
+    result = await auth_service.authenticate_salesman()
+
+    return {
+        "status": "success",
+        "admin": result["admin"],
+    }
+
+
+@app.get("/debug-magento")
+async def debug_magento():
+    return {
+        "magento_url": settings.MAGENTO_URL,
+    }
